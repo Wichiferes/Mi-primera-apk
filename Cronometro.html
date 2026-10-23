@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2500H Neon Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-color: #00f3ff;
+      --neon-glow: rgba(0, 243, 255, 0.35);
+      --bg-dark: #07070b;
+      --card-bg: #0f1018;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body, html {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Inter', sans-serif;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+    }
+
+    .widget-card {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.03) 0%, var(--card-bg) 75%);
+      border-radius: 22px;
+      border: 1.5px solid var(--neon-color);
+      box-shadow: 0 0 20px var(--neon-glow), inset 0 0 15px rgba(0, 0, 0, 0.85);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: border-color 0.8s ease, box-shadow 0.8s ease;
+    }
+
+    /* ENCABEZADO */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: clamp(0.65rem, 2.5vw, 0.8rem);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #8b8d9e;
+      font-weight: 600;
+    }
+
+    .tier-badge {
+      color: var(--neon-color);
+      text-shadow: 0 0 8px var(--neon-glow);
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.8s ease;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #444;
+    }
+
+    .status-dot.running {
+      background-color: var(--neon-color);
+      box-shadow: 0 0 10px var(--neon-color);
+      animation: pulse 1.2s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { opacity: 1; transform: scale(1); }
+      to { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    /* CRONÓMETRO (DE GRANDE A PEQUEÑO) */
+    .timer-wrapper {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      gap: clamp(3px, 1.2vw, 8px);
+      margin: auto 0;
+      padding: 4px 0;
+    }
+
+    .time-unit {
+      display: flex;
+      align-items: baseline;
+    }
+
+    /* 1. Horas: El más grande */
+    .val-hrs {
+      font-size: clamp(2.3rem, 11vw, 4.4rem);
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 0 18px var(--neon-glow);
+      line-height: 1;
+      letter-spacing: -1.5px;
+    }
+    .lbl-hrs {
+      font-size: clamp(0.8rem, 3vw, 1.2rem);
+      color: var(--neon-color);
+      font-weight: 800;
+      margin-left: 2px;
+      margin-right: 4px;
+    }
+
+    /* 2. Minutos: Mediano-Grande */
+    .val-min {
+      font-size: clamp(1.5rem, 7vw, 2.7rem);
+      font-weight: 600;
+      color: #e2e4f0;
+      line-height: 1;
+    }
+    .lbl-min {
+      font-size: clamp(0.65rem, 2.2vw, 0.9rem);
+      color: #8b8d9e;
+      margin-left: 1px;
+      margin-right: 4px;
+    }
+
+    /* 3. Segundos: Mediano-Pequeño */
+    .val-sec {
+      font-size: clamp(1.05rem, 4.8vw, 1.8rem);
+      font-weight: 600;
+      color: #9da0b8;
+      line-height: 1;
+    }
+    .lbl-sec {
+      font-size: clamp(0.55rem, 1.8vw, 0.75rem);
+      color: #6c6f85;
+      margin-left: 1px;
+      margin-right: 3px;
+    }
+
+    /* 4. Milisegundos: El más pequeño */
+    .val-ms {
+      font-size: clamp(0.75rem, 3.3vw, 1.15rem);
+      font-weight: 400;
+      color: var(--neon-color);
+      opacity: 0.9;
+      line-height: 1;
+      min-width: 2.6ch;
+    }
+
+    /* MENSAJE MOTIVACIONAL */
+    .quote-box {
+      text-align: center;
+      font-size: clamp(0.7rem, 2.6vw, 0.88rem);
+      font-style: italic;
+      color: #d0d3e8;
+      padding: 0 8px;
+      line-height: 1.3;
+      min-height: 2.5em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    }
+
+    /* BARRA DE PROGRESO */
+    .progress-section {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: clamp(0.6rem, 2.2vw, 0.75rem);
+      font-family: 'JetBrains Mono', monospace;
+      color: #8b8d9e;
+    }
+
+    .progress-info .highlight {
+      color: var(--neon-color);
+      font-weight: 600;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 99px;
+      overflow: hidden;
+      padding: 1px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--neon-color);
+      border-radius: 99px;
+      box-shadow: 0 0 12px var(--neon-color);
+      transition: width 0.25s ease, background-color 0.8s ease, box-shadow 0.8s ease;
+    }
+
+    /* CONTROLES */
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: clamp(6px, 2vh, 10px) 0;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(0.7rem, 2.5vw, 0.82rem);
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-main {
+      border-color: var(--neon-color);
+      color: var(--neon-color);
+      box-shadow: 0 0 12px var(--neon-glow), inset 0 0 8px var(--neon-glow);
+    }
+
+    .btn-main.active {
+      background: var(--neon-color);
+      color: #07070b;
+      box-shadow: 0 0 18px var(--neon-glow);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-sub {
+      flex: 0.42;
+      color: #8b8d9e;
+      font-size: clamp(0.6rem, 2.1vw, 0.72rem);
+    }
+
+    /* MODAL PARA AJUSTAR HORAS MANUALMENTE */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(7, 7, 11, 0.96);
+      border-radius: 21px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 20;
+      gap: 10px;
+      text-align: center;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-title {
+      font-size: 0.8rem;
+      color: var(--neon-color);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .modal-input {
+      background: #141522;
+      border: 1px solid var(--neon-color);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      width: 85%;
+      text-align: center;
+      outline: none;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      width: 85%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="widget-card">
+    <!-- Encabezado -->
+    <div class="header">
+      <span>META: 2500 HRS</span>
+      <div class="tier-badge">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="tierName">NIVEL 1 • 0H+</span>
+      </div>
+    </div>
+
+    <!-- Reloj: Horas > Minutos > Segundos > Milisegundos -->
+    <div class="timer-wrapper">
+      <div class="time-unit">
+        <span class="val-hrs" id="hrs">0</span><span class="lbl-hrs">h</span>
+      </div>
+      <div class="time-unit">
+        <span class="val-min" id="min">00</span><span class="lbl-min">m</span>
+      </div>
+      <div class="time-unit">
+        <span class="val-sec" id="sec">00</span><span class="lbl-sec">s</span>
+      </div>
+      <div class="time-unit">
+        <span class="val-ms" id="ms">.000</span>
+      </div>
+    </div>
+
+    <!-- Frase Motivacional Impactante -->
+    <div class="quote-box" id="quoteText">
+      "El dolor de la disciplina pesa gramos; el del arrepentimiento, toneladas."
+    </div>
+
+    <!-- Barra de Progreso + Botones -->
+    <div class="progress-section">
+      <div class="progress-info">
+        <span id="nextColorInfo">Próx. color: 200h</span>
+        <span class="highlight" id="percentText">0.00%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+
+      <div class="controls">
+        <button class="btn btn-main" id="toggleBtn" onclick="toggleTimer()">▶ INICIAR</button>
+        <button class="btn btn-sub" onclick="openEditModal()">⚙️ AJUSTAR</button>
+      </div>
+    </div>
+
+    <!-- Modal de Ajuste Manual / Reinicio -->
+    <div class="modal-overlay" id="editModal">
+      <div class="modal-title">Establecer Horas Acumuladas</div>
+      <input type="number" step="0.01" min="0" max="2500" class="modal-input" id="manualHoursInput" placeholder="Ej: 200.5">
+      <div class="modal-actions">
+        <button class="btn btn-main" onclick="saveManualHours()">Guardar</button>
+        <button class="btn" onclick="closeEditModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GOAL_HOURS = 2500;
+    const GOAL_MS = GOAL_HOURS * 3600 * 1000;
+    const STEP_HOURS = 200;
+
+    // 13 Niveles de Color Neón y Frases (Cambia cada 200 horas)
+    const TIERS = [
+      { color: "#00f3ff", glow: "rgba(0, 243, 255, 0.35)", quote: "«El dolor de la disciplina pesa gramos; el del arrepentimiento, toneladas.»" }, // 0 - 199h (Cyan)
+      { color: "#00ff66", glow: "rgba(0, 255, 102, 0.35)", quote: "«200 Horas. La inercia está rota; tu mente ahora trabaja a tu favor.»" }, // 200 - 399h (Verde Matrix)
+      { color: "#ff007f", glow: "rgba(255, 0, 127, 0.35)", quote: "«400 Horas. Mientras otros dudan, tú construyes un imperio en silencio.»" }, // 400 - 599h (Magenta)
+      { color: "#ff9900", glow: "rgba(255, 153, 0, 0.35)", quote: "«600 Horas. El talento sin obsesión no es nada. Tú eres pura constancia.»" }, // 600 - 799h (Naranja Solar)
+      { color: "#b537f2", glow: "rgba(181, 55, 242, 0.35)", quote: "«800 Horas. Ya no eres quien empezó; el fuego del enfoque te ha forjado.»" }, // 800 - 999h (Púrpura)
+      { color: "#ffee00", glow: "rgba(255, 238, 0, 0.35)", quote: "«1,000 Horas. Has entrado al 1% que no se rinde cuando desaparece la euforia.»" }, // 1000 - 1199h (Amarillo)
+      { color: "#ff2a2a", glow: "rgba(255, 42, 42, 0.35)", quote: "«1,200 Horas. Mitad del camino. Imparable no es un adjetivo, es tu estándar.»" }, // 1200 - 1399h (Rojo Carmesí)
+      { color: "#00ffa2", glow: "rgba(0, 255, 162, 0.35)", quote: "«1,400 Horas. El cansancio es temporal; la maestría que estás creando es eterna.»" }, // 1400 - 1599h (Turquesa)
+      { color: "#ff5500", glow: "rgba(255, 85, 0, 0.35)", quote: "«1,600 Horas. La excelencia no es un acto aislado, es tu hábito respirando.»" }, // 1600 - 1799h (Fuego)
+      { color: "#3b82f6", glow: "rgba(59, 130, 246, 0.38)", quote: "«1,800 Horas. Tu futuro yo te mira con orgullo por cada segundo invertido aquí.»" }, // 1800 - 1999h (Azul Cobalto)
+      { color: "#f43f5e", glow: "rgba(244, 63, 94, 0.38)", quote: "«2,000 Horas. La cima está a la vista. Acelera donde el resto se detiene.»" }, // 2000 - 2199h (Rosa Neón)
+      { color: "#a3e635", glow: "rgba(163, 230, 53, 0.38)", quote: "«2,200 Horas. Dominio absoluto. Estás a un paso de coronar la montaña.»" }, // 2200 - 2399h (Lima Ácido)
+      { color: "#ffffff", glow: "rgba(255, 255, 255, 0.55)", quote: "«¡RECTA FINAL / META ALCANZADA! Has conquistado el tiempo y a ti mismo.»" } // 2400 - 2500h+ (Blanco Diamante)
+    ];
+
+    const STORAGE_KEY = "neon_2500h_widget_v1";
+    let state = {
+      accumulatedMs: 0,
+      lastStartTime: null,
+      isRunning: false
+    };
+
+    let rafId = null;
+    let currentTierIndex = -1;
+
+    // Referencias DOM
+    const elHrs = document.getElementById("hrs");
+    const elMin = document.getElementById("min");
+    const elSec = document.getElementById("sec");
+    const elMs = document.getElementById("ms");
+    const elProgress = document.getElementById("progressBar");
+    const elPercent = document.getElementById("percentText");
+    const elNextColor = document.getElementById("nextColorInfo");
+    const elTierName = document.getElementById("tierName");
+    const elQuote = document.getElementById("quoteText");
+    const elToggleBtn = document.getElementById("toggleBtn");
+    const elStatusDot = document.getElementById("statusDot");
+    const elEditModal = document.getElementById("editModal");
+    const elManualInput = document.getElementById("manualHoursInput");
+
+    function loadState() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          state = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error("Error leyendo localStorage", e);
+      }
+      syncButtonsUI();
+      render();
+      if (state.isRunning) {
+        loop();
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error("Error guardando localStorage", e);
+      }
+    }
+
+    function getTotalMs() {
+      if (state.isRunning && state.lastStartTime) {
+        return state.accumulatedMs + (Date.now() - state.lastStartTime);
+      }
+      return state.accumulatedMs;
+    }
+
+    function toggleTimer() {
+      if (state.isRunning) {
+        // Pausar
+        state.accumulatedMs += Date.now() - state.lastStartTime;
+        state.lastStartTime = null;
+        state.isRunning = false;
+        cancelAnimationFrame(rafId);
+      } else {
+        // Iniciar
+        state.lastStartTime = Date.now();
+        state.isRunning = true;
+        loop();
+      }
+      saveState();
+      syncButtonsUI();
+      render();
+    }
+
+    function syncButtonsUI() {
+      if (state.isRunning) {
+        elToggleBtn.innerHTML = "⏸ PAUSAR";
+        elToggleBtn.classList.add("active");
+        elStatusDot.classList.add("running");
+      } else {
+        elToggleBtn.innerHTML = "▶ INICIAR";
+        elToggleBtn.classList.remove("active");
+        elStatusDot.classList.remove("running");
+      }
+    }
+
+    function applyTierTheme(hours) {
+      const idx = Math.min(Math.floor(hours / STEP_HOURS), TIERS.length - 1);
+      if (idx !== currentTierIndex) {
+        currentTierIndex = idx;
+        const tier = TIERS[idx];
+        document.documentElement.style.setProperty("--neon-color", tier.color);
+        document.documentElement.style.setProperty("--neon-glow", tier.glow);
+        elQuote.textContent = tier.quote;
+        elTierName.textContent = `NIVEL ${idx + 1} • ${idx * STEP_HOURS}H+`;
+      }
+
+      const nextMilestone = (idx + 1) * STEP_HOURS;
+      if (hours >= GOAL_HOURS) {
+        elNextColor.textContent = "¡OBJETIVO COMPLETADO!";
+      } else if (nextMilestone <= 2400) {
+        elNextColor.textContent = `Próx. color: ${nextMilestone}h`;
+      } else {
+        elNextColor.textContent = `Meta final: ${GOAL_HOURS}h`;
+      }
+    }
+
+    function render() {
+      const totalMs = Math.min(getTotalMs(), GOAL_MS);
+
+      const totalSeconds = Math.floor(totalMs / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const milliseconds = Math.floor(totalMs % 1000);
+
+      // Actualizar dígitos
+      elHrs.textContent = hours;
+      elMin.textContent = String(minutes).padStart(2, "0");
+      elSec.textContent = String(seconds).padStart(2, "0");
+      elMs.textContent = "." + String(milliseconds).padStart(3, "0");
+
+      // Actualizar progreso
+      const percentage = Math.min((totalMs / GOAL_MS) * 100, 100);
+      elProgress.style.width = `${percentage}%`;
+      elPercent.textContent = `${percentage.toFixed(2)}%`;
+
+      // Verificar cambio de color cada 200h
+      applyTierTheme(hours);
+    }
+
+    function loop() {
+      if (!state.isRunning) return;
+      render();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    // Funciones del Modal de Ajuste Manual
+    function openEditModal() {
+      const currentHours = (getTotalMs() / (3600 * 1000)).toFixed(2);
+      elManualInput.value = currentHours;
+      elEditModal.classList.add("show");
+    }
+
+    function closeEditModal() {
+      elEditModal.classList.remove("show");
+    }
+
+    function saveManualHours() {
+      const val = parseFloat(elManualInput.value);
+      if (!isNaN(val) && val >= 0) {
+        const clampedHours = Math.min(val, GOAL_HOURS);
+        state.accumulatedMs = Math.floor(clampedHours * 3600 * 1000);
+        if (state.isRunning) {
+          state.lastStartTime = Date.now();
+        }
+        currentTierIndex = -1; // Forzar actualización de tema
+        saveState();
+        render();
+      }
+      closeEditModal();
+    }
+
+    // Si la pantalla vuelve de reposo, refrescar inmediatamente
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && state.isRunning) {
+        render();
+      }
+    });
+
+    loadState();
+  </script>
+</body>
+</html>
